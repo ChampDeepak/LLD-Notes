@@ -28,6 +28,8 @@ class Application{
 }
 ```
 ---
+For concrete code example check code part of the og website: https://refactoring.guru/design-patterns/observer
+---
 ### 2-ways for having publisher class:
 
 
