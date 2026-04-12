@@ -8,11 +8,11 @@ Adapter is a structural design pattern that allows objects with incompatible int
 
 ### Example: Payment Service
 
-A `PaymentService` client needs to interact with multiple payment gateways, each with incompatible interfaces:
+A `PaymentService` client needs to interact with multiple payment gateways:
 
 ```python
 import razorpay
-razorpay.makePayment()
+razorpay.pay()
 
 import stripe
 stripe.pay()
@@ -21,7 +21,7 @@ import paynow
 paynow.payment()
 ```
 
-**Problem**: These are third-party libraries that we cannot change. Modifying them could break functionality, and using them directly means our codebase uses three different method names for the same operation. Which will lead to confusion when are codebase becomes very large as we are not using common terminology for the same operation. 
+**Problem**: My service works good with razorpay and stripe library but now I also want add paynow as another payment option. So there are already two implemented systems that are payment servie and paynow library. Changing any of them might lead to breaking of some other piece of code in rest of the codebase. And without making changes we can not add the new functionality.  
 
 **Solution**: Use the Adapter pattern to create a translation layer between the client and incompatible third-party classes.
 
