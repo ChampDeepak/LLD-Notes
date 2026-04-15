@@ -2,7 +2,10 @@
 
 The Builder pattern says: **instead of constructing a complex object all at once, build it step by step through a dedicated builder object.**
 
-## The Problem Builder Solves
+---
+
+<details>
+<summary><strong>The Problem Builder Solves</strong></summary>
 
 ### 🔴 The Core Pain: Telescoping Constructors
 
@@ -65,9 +68,12 @@ This gives you:
 - **No incomplete objects** — the product is only returned after all required steps are done
 - **Reusable recipes** — the Director defines step order; swap the Builder to get a different product
 
+</details>
+
 ---
 
-## High-Level Structure
+<details>
+<summary><strong>High-Level Structure (Class Diagram)</strong></summary>
 
 ```mermaid
 classDiagram
@@ -122,9 +128,12 @@ classDiagram
 - Concrete builders (`WoodenHouseBuilder`, `StoneHouseBuilder`) implement the steps with specific materials and maintain a `House` instance they assemble piece by piece.
 - The `House` is the Product — the complex object being built. It's created and populated by the builder, then returned to the client via `getResult()`.
 
+</details>
+
 ---
 
-## Participants — In Depth
+<details>
+<summary><strong>Participants — In Depth</strong></summary>
 
 ### 1. Product (House)
 
@@ -282,9 +291,12 @@ public class ConstructionDirector {
 
 > **Note:** The Director is **optional**. The client can call builder steps directly for custom, one-off construction. But when you have repeatable recipes, the Director avoids duplicating the step sequence across clients.
 
+</details>
+
 ---
 
-## Cartoon Implementation Example: House Construction System
+<details>
+<summary><strong>Cartoon Implementation Example: House Construction System</strong></summary>
 
 Two types of houses (wooden and stone), two construction recipes (simple and luxury). The same Director recipe produces different results when paired with different builders.
 
@@ -479,7 +491,8 @@ public class Main {
 }
 ```
 
-### Output
+<details>
+<summary>Output</summary>
 
 ```
 Building a SIMPLE WOODEN house:
@@ -507,6 +520,8 @@ Building a CUSTOM house (no Director):
 Result: House [foundation=wooden pillars, walls=wooden planks, roof=wooden shingles, rooms=3, garage=false, pool=true]
 ```
 
+</details>
+
 **Key observations from the output:**
 
 1. **Same recipe, different results** — `constructLuxuryHouse()` is defined once in the Director, but produces a wooden house or a stone house depending on which builder is plugged in.
@@ -514,9 +529,12 @@ Result: House [foundation=wooden pillars, walls=wooden planks, roof=wooden shing
 3. **Each step is self-documenting** — `buildWalls()` is clearer than the 3rd positional parameter in a 9-parameter constructor.
 4. **Product is complete when returned** — `getResult()` hands over a fully assembled house. No half-built objects leak out.
 
+</details>
+
 ---
 
-## How the Participants Interact — Sequence of Events
+<details>
+<summary><strong>How the Participants Interact — Sequence of Events</strong></summary>
 
 ```
   Client              Director            Builder (WoodenHouseBuilder)        Product (House)
@@ -546,9 +564,309 @@ Result: House [foundation=wooden pillars, walls=wooden planks, roof=wooden shing
     |   built house                                                             |
 ```
 
+</details>
+
 ---
 
-## Builder vs. Other Creational Patterns
+<details>
+<summary><strong>Inner Static Builder — The Immutable Object Variant (Effective Java Style)</strong></summary>
+
+### The Problem
+
+You have an **immutable class** with many attributes and you want flexibility in object creation — skip optional fields, set fields in any order — without telescoping constructors.
+
+> **Key difference from the GoF Builder above:** There is no Director, no Builder interface, no separate ConcreteBuilder classes. Instead, the Builder is a **static inner class** inside the product itself, and the product is **immutable** (no setters). This is the variant popularized by Joshua Bloch in *Effective Java*.
+
+---
+
+### The Teacher's Design Journey
+
+**Step 1 — Identify the need:** The outer class is immutable (no setters). It has many attributes. Passing all of them via a constructor is rigid and error-prone.
+
+**Step 2 — Create an inner class (the Builder):** This inner class has the **exact same attributes** as the outer class. The outer class constructor takes one parameter: an object of this inner Builder class.
+
+**Step 3 — Make the Builder static:** Since the client needs to create a Builder object **without first having an outer class object**, the Builder must be a `static` inner class. (Static inner classes can be instantiated without an instance of the outer class.)
+
+**Step 4 — Add setters with `return this`:** Each setter in the Builder class returns the Builder object itself (`return this`). This enables **method chaining**.
+
+**Step 5 — Add a `build()` method:** This method inside the Builder class calls `new OuterClass(this)` and returns the **immutable** outer object.
+
+---
+
+### Key Rules
+
+| Rule | Reason |
+|---|---|
+| Builder must be a **static inner class** | So it can be created without an outer class instance |
+| Outer class constructor takes Builder object | Single parameter instead of many |
+| Setters return `this` | Enables method chaining |
+| `build()` method calls outer constructor | Converts mutable Builder to immutable object |
+| Outer class has **no setters** | Ensures immutability after creation |
+
+---
+
+### Concrete Example: Immutable `Student` Class
+
+<details>
+<summary>Step 1: The Immutable Outer Class (Student)</summary>
+
+```java
+public class Student {
+    // All fields are private and final — immutable
+    private final String name;
+    private final int age;
+    private final String email;
+    private final String phone;
+    private final String address;
+    private final String university;
+    private final double gpa;
+
+    // Private constructor — only the Builder can call this
+    private Student(Builder builder) {
+        this.name       = builder.name;
+        this.age        = builder.age;
+        this.email      = builder.email;
+        this.phone      = builder.phone;
+        this.address    = builder.address;
+        this.university = builder.university;
+        this.gpa        = builder.gpa;
+    }
+
+    // Only getters — no setters. Object is frozen after creation.
+    public String getName()       { return name; }
+    public int getAge()           { return age; }
+    public String getEmail()      { return email; }
+    public String getPhone()      { return phone; }
+    public String getAddress()    { return address; }
+    public String getUniversity() { return university; }
+    public double getGpa()        { return gpa; }
+
+    @Override
+    public String toString() {
+        return "Student [name=" + name + ", age=" + age + ", email=" + email
+            + ", phone=" + phone + ", address=" + address
+            + ", university=" + university + ", gpa=" + gpa + "]";
+    }
+
+    // ──────── The Builder lives here ────────
+    // (see Step 2 below)
+}
+```
+
+</details>
+
+<details>
+<summary>Step 2: The Static Inner Builder Class</summary>
+
+```java
+    // Inside Student class
+    public static class Builder {
+        // Same attributes as the outer class
+        private String name;
+        private int age;
+        private String email;
+        private String phone;
+        private String address;
+        private String university;
+        private double gpa;
+
+        // Constructor for required fields (if any)
+        public Builder(String name) {
+            this.name = name;  // name is mandatory
+        }
+
+        // Each setter returns 'this' for method chaining
+        public Builder setAge(int age) {
+            this.age = age;
+            return this;
+        }
+
+        public Builder setEmail(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public Builder setPhone(String phone) {
+            this.phone = phone;
+            return this;
+        }
+
+        public Builder setAddress(String address) {
+            this.address = address;
+            return this;
+        }
+
+        public Builder setUniversity(String university) {
+            this.university = university;
+            return this;
+        }
+
+        public Builder setGpa(double gpa) {
+            this.gpa = gpa;
+            return this;
+        }
+
+        // build() creates the immutable outer object
+        public Student build() {
+            return new Student(this);
+        }
+    }
+```
+
+</details>
+
+<details>
+<summary>Step 3: Client Code — How It's Used</summary>
+
+```java
+public class Main {
+    public static void main(String[] args) {
+
+        // === All fields set, any order ===
+        Student alice = new Student.Builder("Alice")
+            .setAge(21)
+            .setEmail("alice@example.com")
+            .setUniversity("MIT")
+            .setGpa(3.9)
+            .setPhone("555-1234")
+            .setAddress("123 Main St")
+            .build();
+
+        System.out.println(alice);
+
+        // === Skip optional fields — only set what you need ===
+        Student bob = new Student.Builder("Bob")
+            .setAge(22)
+            .setEmail("bob@example.com")
+            .build();
+
+        System.out.println(bob);
+
+        // === Minimal construction — only the required field ===
+        Student charlie = new Student.Builder("Charlie")
+            .build();
+
+        System.out.println(charlie);
+    }
+}
+```
+
+**Output:**
+
+```
+Student [name=Alice, age=21, email=alice@example.com, phone=555-1234, address=123 Main St, university=MIT, gpa=3.9]
+Student [name=Bob, age=22, email=bob@example.com, phone=null, address=null, university=null, gpa=0.0]
+Student [name=Charlie, age=0, email=null, phone=null, address=null, university=null, gpa=0.0]
+```
+
+</details>
+
+<details>
+<summary>Complete Student.java (Full File)</summary>
+
+```java
+public class Student {
+    private final String name;
+    private final int age;
+    private final String email;
+    private final String phone;
+    private final String address;
+    private final String university;
+    private final double gpa;
+
+    private Student(Builder builder) {
+        this.name       = builder.name;
+        this.age        = builder.age;
+        this.email      = builder.email;
+        this.phone      = builder.phone;
+        this.address    = builder.address;
+        this.university = builder.university;
+        this.gpa        = builder.gpa;
+    }
+
+    public String getName()       { return name; }
+    public int getAge()           { return age; }
+    public String getEmail()      { return email; }
+    public String getPhone()      { return phone; }
+    public String getAddress()    { return address; }
+    public String getUniversity() { return university; }
+    public double getGpa()        { return gpa; }
+
+    @Override
+    public String toString() {
+        return "Student [name=" + name + ", age=" + age + ", email=" + email
+            + ", phone=" + phone + ", address=" + address
+            + ", university=" + university + ", gpa=" + gpa + "]";
+    }
+
+    public static class Builder {
+        private String name;
+        private int age;
+        private String email;
+        private String phone;
+        private String address;
+        private String university;
+        private double gpa;
+
+        public Builder(String name) {
+            this.name = name;
+        }
+
+        public Builder setAge(int age)                 { this.age = age; return this; }
+        public Builder setEmail(String email)           { this.email = email; return this; }
+        public Builder setPhone(String phone)           { this.phone = phone; return this; }
+        public Builder setAddress(String address)       { this.address = address; return this; }
+        public Builder setUniversity(String university) { this.university = university; return this; }
+        public Builder setGpa(double gpa)               { this.gpa = gpa; return this; }
+
+        public Student build() {
+            return new Student(this);
+        }
+    }
+}
+```
+
+</details>
+
+---
+
+### Notes: Why Each Design Decision Matters
+
+**1. Why `private` constructor on the outer class?**
+The outer class constructor is `private` so that **nobody can create a `Student` directly** — they must go through the Builder. This ensures every `Student` object is fully assembled before it's exposed.
+
+**2. Why `static` inner class?**
+A non-static inner class requires an instance of the outer class to exist first. But we need the Builder *before* the outer object exists — we're using it to *create* the outer object. Making it `static` breaks this circular dependency.
+
+**3. Why `return this` in setters?**
+Returning `this` (the Builder itself) from every setter enables **method chaining** — calling `.setAge(21).setEmail("...")` in a single fluent expression. Without it, every setter call would be a separate statement.
+
+**4. Why pass `this` (the Builder) to the outer constructor?**
+Instead of passing 7 individual parameters, the outer constructor takes one Builder object and pulls values from it. This is the core trick — the Builder accumulates state mutably, then the constructor reads it all at once to create the immutable object.
+
+**5. Why `final` fields and no setters on the outer class?**
+This guarantees **immutability**. Once `build()` is called and the `Student` is created, its state can never change. This makes the object thread-safe, predictable, and safe to share across the system.
+
+---
+
+### How This Differs from the GoF Builder (Above)
+
+| Aspect | GoF Builder (Director + Interface) | Inner Static Builder (Effective Java) |
+|---|---|---|
+| **Goal** | Same build process → different products | Flexible construction of one immutable class |
+| **Builder location** | Separate class | Static inner class inside the product |
+| **Interface** | Yes — `HouseBuilder` interface | No — single concrete Builder class |
+| **Director** | Yes — defines step order | No — client chains setters directly |
+| **Product mutability** | Typically mutable (has setters) | Immutable (`final` fields, no setters) |
+| **Method chaining** | Not typical (void build methods) | Core feature (`return this`) |
+| **Use case** | Complex construction with varying representations | Objects with many optional parameters |
+
+</details>
+
+---
+
+<details>
+<summary><strong>Builder vs. Other Creational Patterns</strong></summary>
 
 | Question | Answer | Pattern |
 |---|---|---|
@@ -560,9 +878,12 @@ Result: House [foundation=wooden pillars, walls=wooden planks, roof=wooden shing
 
 **Builder vs. Abstract Factory:** Both create complex objects. The difference — Builder constructs **step by step** and returns the product at the end. Abstract Factory returns each product **immediately** (each method call produces a complete object from a family).
 
+</details>
+
 ---
 
-## Common Mistakes to Avoid
+<details>
+<summary><strong>Common Mistakes to Avoid</strong></summary>
 
 ### 1. Forgetting to Reset the Builder After `getResult()`
 
@@ -609,9 +930,45 @@ public House getCurrentHouse() {
 // CORRECT — only expose via getResult() after all steps are done
 ```
 
+### 4. Making the Inner Builder Non-Static (Effective Java variant)
+
+```java
+// WRONG — requires an outer class instance to create the Builder
+public class Student {
+    public class Builder { ... }  // non-static inner class
+}
+// Student.Builder b = new Student().new Builder("Alice"); // awkward and defeats the purpose
+
+// CORRECT — static inner class, no outer instance needed
+public class Student {
+    public static class Builder { ... }
+}
+// Student.Builder b = new Student.Builder("Alice"); // clean
+```
+
+### 5. Forgetting to Return `this` in Builder Setters
+
+```java
+// WRONG — breaks method chaining
+public void setAge(int age) {
+    this.age = age;
+}
+// Forces: b.setAge(21); b.setEmail("..."); b.build(); // separate statements
+
+// CORRECT — enables fluent API
+public Builder setAge(int age) {
+    this.age = age;
+    return this;
+}
+// Allows: new Builder("Alice").setAge(21).setEmail("...").build();
+```
+
+</details>
+
 ---
 
-## Viva Quick-Fire Answers
+<details>
+<summary><strong>Viva Quick-Fire Answers</strong></summary>
 
 **Q: What is the Builder pattern in one sentence?**
 A: Separate the construction of a complex object from its representation, allowing the same construction process to create different representations.
@@ -632,7 +989,15 @@ A: Factory creates an object in **one step** (one method call returns a complete
 A: Typically, each ConcreteBuilder builds one type of product. But different ConcreteBuilders implementing the same interface can produce structurally different products from the same set of steps.
 
 **Q: What does `getResult()` do?**
-A: Returns the fully assembled product and resets the builder's internal state so it's ready for the next build.  
+A: Returns the fully assembled product and resets the builder's internal state so it's ready for the next build.
 
----
-Method chaining could also be explored. 
+**Q: Why must the Inner Builder be static?**
+A: Because the Builder needs to be instantiated *before* the outer class object exists. A non-static inner class requires an instance of the enclosing class, creating a chicken-and-egg problem.
+
+**Q: What makes the Effective Java Builder different from the GoF Builder?**
+A: GoF uses Director + Builder interface for varying representations. Effective Java uses a static inner Builder class with method chaining to construct a single immutable class with many optional parameters. No Director, no interface.
+
+**Q: How does the Inner Builder ensure immutability?**
+A: The outer class has `final` fields, a `private` constructor (only the Builder calls it), and no setters. Once `build()` is called, the object is frozen forever.
+
+</details>
