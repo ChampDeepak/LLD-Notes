@@ -1,6 +1,6 @@
 # All Ways to Create a Singleton Class in Java
 
-A Singleton ensures **exactly one instance** of a class exists and provides a global access point to it.
+A Singleton ensures **exactly one instance** of a class exists and provides a global access point to it. The same behavior can also be achieved by setting all the feilds of that class to static but it would lead to tight coupling. For example if there is a function that works with 3 types of logger class, and to ensure this behavior with this new static feild class client would need to overload the method with 3 different signatures as in case of class having all feilds static polymorphism breaks. 
 
 ---
 

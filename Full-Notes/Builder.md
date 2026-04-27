@@ -1,6 +1,6 @@
 # Builder Design Pattern
 
-The Builder pattern says: **instead of constructing a complex object all at once, build it step by step through a dedicated builder object.**
+The Builder pattern: **The main application of builder design pattern is for creating instance of immutable class that has very large constructors with some feilds optional and with some feilds mandatory. If the class is mutable then in that case we can create its instance using no args constructors and then set the values of the attributes using setters so the main use case of builder design pattern is to create instance of immutable class that has complex constructors.**
 
 ---
 
